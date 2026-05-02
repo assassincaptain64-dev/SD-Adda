@@ -232,11 +232,28 @@ const PORT = process.env.PORT || 5000;
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   const path = require('path');
-  app.use(express.static(path.join(__dirname, '../frontend', 'dist')));
+  const fs = require('fs');
+  const distPath = path.resolve(__dirname, '..', 'frontend', 'dist');
+  const indexPath = path.join(distPath, 'index.html');
   
-  app.use((req, res) => {
-    res.sendFile(path.resolve(__dirname, '../frontend', 'dist', 'index.html'));
-  });
+  console.log('Production mode detected.');
+  console.log('Checking for static files at:', distPath);
+  
+  if (fs.existsSync(distPath)) {
+    console.log('Dist directory found.');
+    app.use(express.static(distPath));
+    
+    app.get('*', (req, res) => {
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        console.error('index.html not found at:', indexPath);
+        res.status(404).send('Frontend build not found. Please check build logs.');
+      }
+    });
+  } else {
+    console.error('Dist directory NOT found at:', distPath);
+  }
 }
 
 server.listen(PORT, () => {
