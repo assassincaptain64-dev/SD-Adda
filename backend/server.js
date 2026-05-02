@@ -243,7 +243,8 @@ if (process.env.NODE_ENV === 'production') {
     console.log('Dist directory found.');
     app.use(express.static(distPath));
     
-    app.get('*', (req, res) => {
+    // Catch-all route to serve index.html for SPA
+    app.use((req, res) => {
       if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath);
       } else {
