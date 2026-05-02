@@ -43,13 +43,15 @@ Follow these steps to deploy the entire app as a single service on Render:
     - **Start Command:** `npm start`
 
 3.  **Environment Variables:**
-    Click **"Advanced"** -> **"Add Environment Variable"** and add:
+    Add the following in the **"Environment"** tab of your Render dashboard:
     - `MONGODB_URI` = (Your MongoDB Atlas Link)
     - `JWT_SECRET` = (Random secure string)
+    - `CLOUDINARY_URL` = (Your Cloudinary API Environment variable)
     - `ZEGO_APP_ID` = (Your Zego App ID)
     - `ZEGO_SERVER_SECRET` = (Your Zego Server Secret)
     - `NODE_ENV` = `production`
-    - `VITE_API_URL` = (Leave blank or point to your Render URL after deploy)
+
+    *Note: You DO NOT need to add any VITE_API_URL or VITE_SOCKET_URL anymore. The app is now self-configuring!*
 
 4.  **Deploy:**
     Render will now build your frontend and serve it via the backend automatically!
