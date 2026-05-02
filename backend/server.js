@@ -50,8 +50,8 @@ app.use('/api/friends', friendsRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/messages', messageRoutes);
 
-// Basic Route
-app.get('/', (req, res) => {
+// Health Check Route
+app.get('/api/health', (req, res) => {
   res.send('SD-Adda API is running');
 });
 
