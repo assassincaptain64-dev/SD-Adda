@@ -3,6 +3,7 @@ import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
 import { Hash, Volume2, Plus } from 'lucide-react';
 import axios from 'axios';
+import { API_URL } from '../api';
 import UserPanel from './UserPanel';
 
 export default function ChannelList() {
@@ -26,8 +27,7 @@ export default function ChannelList() {
     e.preventDefault();
     if (channelName && activeServerId) {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-        await axios.post(`${API_URL}/channels/server/${activeServerId}`, {
+            await axios.post(`${API_URL}/channels/server/${activeServerId}`, {
           name: channelName,
           type: channelType
         });

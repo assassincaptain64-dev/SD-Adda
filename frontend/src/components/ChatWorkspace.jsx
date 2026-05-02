@@ -3,6 +3,7 @@ import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
 import { Hash, Send, PlusCircle, Image as ImageIcon, X, Smile, Edit2, Trash2 } from 'lucide-react';
 import axios from 'axios';
+import { API_URL } from '../api';
 import EmojiPicker from 'emoji-picker-react';
 
 export default function ChatWorkspace({ channel, isDM = false }) {
@@ -124,8 +125,7 @@ export default function ChatWorkspace({ channel, isDM = false }) {
       const formData = new FormData();
       formData.append('image', attachment);
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const res = await axios.post(`${API_URL}/upload/image`, formData, {
+          const res = await axios.post(`${API_URL}/upload/image`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
           withCredentials: true
         });

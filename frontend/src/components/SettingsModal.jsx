@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/authStore';
 import AvatarEditor from 'react-avatar-editor';
 import { X, Upload } from 'lucide-react';
 import axios from 'axios';
+import { API_URL } from '../api';
 
 export default function SettingsModal({ onClose }) {
   const { user, checkAuth } = useAuthStore();
@@ -26,8 +27,7 @@ export default function SettingsModal({ onClose }) {
           const formData = new FormData();
           formData.append('image', blob, 'avatar.png');
 
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-          await axios.post(`${API_URL}/upload/avatar`, formData, {
+            await axios.post(`${API_URL}/upload/avatar`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
             withCredentials: true
           });
