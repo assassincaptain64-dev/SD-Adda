@@ -4,6 +4,9 @@ import { useAuthStore } from '../store/authStore';
 import { ZegoUIKitPrebuilt } from '@zegocloud/zego-uikit-prebuilt';
 import { PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react';
 
+import axios from 'axios';
+import { API_URL } from '../api';
+
 export default function VoiceManager() {
   const { currentVoiceChannelId, leaveVoice, channels, activeChannelId } = useAppStore();
   const { user } = useAuthStore();
@@ -27,40 +30,46 @@ export default function VoiceManager() {
     }
 
     const initZego = async () => {
-      const appID = parseInt(import.meta.env.VITE_ZEGO_APP_ID || process.env.ZEGO_APP_ID);
-      const serverSecret = import.meta.env.VITE_ZEGO_SERVER_SECRET || process.env.ZEGO_SERVER_SECRET;
-      
-      if (!appID || !serverSecret) {
-        console.error('Zego Credentials missing');
-        return;
-      }
-      
-      const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-        appID,
-        serverSecret,
-        currentVoiceChannelId,
-        user.id,
-        user.username
-      );
+      try {
+        const configRes = await axios.get(`${API_URL}/config/zego`, { withCredentials: true });
+        const { appID, serverSecret } = configRes.data;
 
-      const zp = ZegoUIKitPrebuilt.create(kitToken);
-      zpRef.current = zp;
-
-      zp.joinRoom({
-        container: containerRef.current,
-        scenario: {
-          mode: ZegoUIKitPrebuilt.GroupCall,
-        },
-        showScreenSharingButton: true,
-        showPreJoinView: true,
-        showQuitButton: true,
-        turnOnMicrophoneWhenJoining: true,
-        turnOnCameraWhenJoining: false,
-        layout: "Auto",
-        onLeaveRoom: () => {
-          leaveVoice();
+        if (!appID || !serverSecret) {
+          console.error('Zego Credentials missing on server');
+          return;
         }
-      });
+
+        const parsedAppID = parseInt(appID);
+      
+        const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+          parsedAppID,
+          serverSecret,
+          currentVoiceChannelId,
+          user.id,
+          user.username
+        );
+
+        const zp = ZegoUIKitPrebuilt.create(kitToken);
+        zpRef.current = zp;
+
+        zp.joinRoom({
+          container: containerRef.current,
+          scenario: {
+            mode: ZegoUIKitPrebuilt.GroupCall,
+          },
+          showScreenSharingButton: true,
+          showPreJoinView: true,
+          showQuitButton: true,
+          turnOnMicrophoneWhenJoining: true,
+          turnOnCameraWhenJoining: false,
+          layout: "Auto",
+          onLeaveRoom: () => {
+            leaveVoice();
+          }
+        });
+      } catch (err) {
+        console.error('Error initializing Zego:', err);
+      }
     };
 
     initZego();

@@ -50,6 +50,14 @@ app.use('/api/friends', friendsRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/messages', messageRoutes);
 
+// Config Route
+app.get('/api/config/zego', (req, res) => {
+  res.json({
+    appID: process.env.ZEGO_APP_ID,
+    serverSecret: process.env.ZEGO_SERVER_SECRET
+  });
+});
+
 // Health Check Route
 app.get('/api/health', (req, res) => {
   res.send('SD-Adda API is running');
