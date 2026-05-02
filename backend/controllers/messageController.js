@@ -52,3 +52,15 @@ exports.deleteMessage = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+exports.markAsRead = async (req, res) => {
+  try {
+    const { targetId } = req.params;
+    const User = require('../models/User');
+    await User.findByIdAndUpdate(req.user.id, {
+      [`lastSeen.${targetId}`]: new Date()
+    });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};

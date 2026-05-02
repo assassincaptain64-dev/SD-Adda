@@ -5,6 +5,10 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
+const User = require('./models/User');
+const Message = require('./models/Message');
+const ServerModel = require('./models/Server');
+const Conversation = require('./models/Conversation');
 
 const app = express();
 const server = http.createServer(app);
@@ -52,8 +56,7 @@ app.get('/', (req, res) => {
 });
 
 // Socket.io connection
-const Message = require('./models/Message');
-const User = require('./models/User');
+
 
 const onlineUsers = new Map(); // userId -> socketId
 const voiceChannels = new Map(); // channelId -> Map of { userId, username, avatar }
@@ -63,6 +66,28 @@ io.on('connection', (socket) => {
     onlineUsers.set(userId, socket.id);
     await User.findByIdAndUpdate(userId, { status: 'online' });
     io.emit('user_status_change', { userId, status: 'online' });
+
+    // Auto-join all rooms for indicators
+    try {
+      const user = await User.findById(userId).populate('servers');
+      if (user) {
+        // Join server channel rooms
+        const servers = await ServerModel.find({ _id: { $in: user.servers } }).populate('channels');
+        servers.forEach(server => {
+          server.channels.forEach(ch => {
+            socket.join(ch._id.toString());
+          });
+        });
+
+        // Join conversation rooms
+        const conversations = await Conversation.find({ participants: userId });
+        conversations.forEach(conv => {
+          socket.join(conv._id.toString());
+        });
+      }
+    } catch (err) {
+      console.error('Error auto-joining rooms:', err);
+    }
   });
 
   socket.on('join_channel', (channelId) => {
@@ -80,7 +105,22 @@ io.on('connection', (socket) => {
       });
       await newMessage.save();
       const populatedMessage = await Message.findById(newMessage._id).populate('sender', 'username avatar uid');
-      io.to(data.channelId).emit('receive_message', populatedMessage);
+      
+      if (!data.isDM) {
+        // Server channel: Emit to room
+        io.to(data.channelId).emit('receive_message', populatedMessage);
+      } else {
+        // DM: Emit to BOTH participants directly if online
+        const conv = await Conversation.findById(data.channelId);
+        if (conv) {
+          conv.participants.forEach(p => {
+            const socketId = onlineUsers.get(p.toString());
+            if (socketId) {
+              io.to(socketId).emit('receive_message', populatedMessage);
+            }
+          });
+        }
+      }
     } catch (err) {
       console.error('Error saving message:', err);
     }

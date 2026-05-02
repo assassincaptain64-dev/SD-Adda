@@ -90,3 +90,48 @@ exports.getMe = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+exports.getUnreadSummary = async (req, res) => {
+  try {
+    const Message = require('../models/Message');
+    const Channel = require('../models/Channel');
+    const Conversation = require('../models/Conversation');
+    
+    const user = await User.findById(req.user.id).populate({
+      path: 'servers',
+      populate: { path: 'channels' }
+    });
+
+    const unreadChannels = {};
+    const unreadConversations = {};
+
+    // Check all channels in all servers
+    for (const server of user.servers) {
+      for (const ch of server.channels) {
+        if (ch.type !== 'TEXT') continue;
+        const lastSeen = user.lastSeen.get(ch._id.toString()) || new Date(0);
+        const count = await Message.countDocuments({
+          channel: ch._id,
+          sender: { $ne: req.user.id },
+          createdAt: { $gt: lastSeen }
+        });
+        if (count > 0) unreadChannels[ch._id] = count;
+      }
+    }
+
+    // Check all conversations
+    const conversations = await Conversation.find({ participants: req.user.id });
+    for (const conv of conversations) {
+      const lastSeen = user.lastSeen.get(conv._id.toString()) || new Date(0);
+      const count = await Message.countDocuments({
+        conversation: conv._id,
+        sender: { $ne: req.user.id },
+        createdAt: { $gt: lastSeen }
+      });
+      if (count > 0) unreadConversations[conv._id] = count;
+    }
+
+    res.json({ unreadChannels, unreadConversations });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};

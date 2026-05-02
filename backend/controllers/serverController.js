@@ -67,8 +67,31 @@ exports.joinServer = async (req, res) => {
 
 exports.getUserServers = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).populate('servers');
-    res.json(user.servers);
+    const Message = require('../models/Message');
+    const user = await User.findById(req.user.id).populate({
+      path: 'servers',
+      populate: { path: 'channels' }
+    });
+
+    const serversWithUnread = await Promise.all(user.servers.map(async (server) => {
+      let hasUnread = false;
+      for (const ch of server.channels) {
+        if (ch.type !== 'TEXT') continue;
+        const lastSeen = user.lastSeen.get(ch._id.toString()) || new Date(0);
+        const count = await Message.countDocuments({
+          channel: ch._id,
+          sender: { $ne: req.user.id },
+          createdAt: { $gt: lastSeen }
+        });
+        if (count > 0) {
+          hasUnread = true;
+          break;
+        }
+      }
+      return { ...server.toObject(), hasUnread };
+    }));
+
+    res.json(serversWithUnread);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -84,7 +107,21 @@ exports.getServerById = async (req, res) => {
       return res.status(403).json({ message: 'Not a member of this server' });
     }
 
-    res.json(server);
+    const Message = require('../models/Message');
+    const user = await User.findById(req.user.id);
+
+    const channelsWithUnread = await Promise.all(server.channels.map(async (ch) => {
+      if (ch.type !== 'TEXT') return ch.toObject();
+      const lastSeen = user.lastSeen.get(ch._id.toString()) || new Date(0);
+      const unreadCount = await Message.countDocuments({
+        channel: ch._id,
+        sender: { $ne: req.user.id },
+        createdAt: { $gt: lastSeen }
+      });
+      return { ...ch.toObject(), unreadCount };
+    }));
+
+    res.json({ ...server.toObject(), channels: channelsWithUnread });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

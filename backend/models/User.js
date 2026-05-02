@@ -7,7 +7,8 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   avatar: { type: String, default: '' },
   status: { type: String, enum: ['online', 'offline', 'busy'], default: 'offline' },
-  servers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Server' }]
+  servers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Server' }],
+  lastSeen: { type: Map, of: Date, default: {} }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

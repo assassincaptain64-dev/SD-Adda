@@ -23,7 +23,13 @@ export const useAppStore = create((set, get) => ({
   currentVoiceChannelId: null, // Track global voice session
   
   setIsHome: (val) => set({ isHome: val, activeServerId: val ? null : get().activeServerId, activeConversationId: null }),
-  setConversations: (conversations) => set({ conversations }),
+  setConversations: (conversations) => {
+    const unreadMap = {};
+    conversations.forEach(c => {
+      if (c.unreadCount > 0) unreadMap[c._id] = c.unreadCount;
+    });
+    set({ conversations, unreadConversations: { ...get().unreadConversations, ...unreadMap } });
+  },
   setActiveConversation: (id) => {
     set({ activeConversationId: id, activeChannelId: null });
     // Remove from unread when clicking
@@ -37,6 +43,7 @@ export const useAppStore = create((set, get) => ({
     if (get().socket) return;
     const socket = io(SOCKET_URL, { withCredentials: true });
     socket.emit('user_connected', userId);
+    get().fetchUnreadSummary();
     
     socket.on('receive_message', (message) => {
       const state = get();
@@ -49,6 +56,8 @@ export const useAppStore = create((set, get) => ({
       // If message is for currently active view, add it to messages list
       if (targetId === currentChannelId || targetId === currentConvId) {
         set(state => ({ messages: [...state.messages, message] }));
+        // Sync read status with backend immediately so refresh doesn't show it as unread
+        axios.post(`${API_URL}/messages/read/${targetId}`).catch(() => {});
       } else {
         // Otherwise, mark as unread
         if (isDM) {
@@ -190,7 +199,15 @@ export const useAppStore = create((set, get) => ({
   fetchServerDetails: async (serverId) => {
     try {
       const res = await axios.get(`${API_URL}/servers/${serverId}`);
-      set({ channels: res.data.channels, activeServerId: serverId });
+      const unreadMap = {};
+      res.data.channels.forEach(ch => {
+        if (ch.unreadCount > 0) unreadMap[ch._id] = ch.unreadCount;
+      });
+      set({ 
+        channels: res.data.channels, 
+        activeServerId: serverId,
+        unreadChannels: { ...get().unreadChannels, ...unreadMap }
+      });
       if (res.data.channels.length > 0) {
         set({ activeChannelId: res.data.channels[0]._id });
         if(res.data.channels[0].type === 'TEXT') {
@@ -241,6 +258,20 @@ export const useAppStore = create((set, get) => ({
       set({ messages: res.data });
     } catch (error) {
       console.error('Error fetching DM messages');
+    }
+  },
+
+  fetchUnreadSummary: async () => {
+    try {
+      const res = await axios.get(`${API_URL}/auth/unread-summary`);
+      const { unreadChannels, unreadConversations } = res.data;
+      
+      set({ 
+        unreadChannels,
+        unreadConversations
+      });
+    } catch (error) {
+      console.error('Error fetching unread summary');
     }
   }
 }));

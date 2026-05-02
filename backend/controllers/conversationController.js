@@ -7,7 +7,20 @@ exports.getConversations = async (req, res) => {
       participants: req.user.id
     }).populate('participants', 'username avatar uid status').sort({ updatedAt: -1 });
 
-    res.json(conversations);
+    const User = require('../models/User');
+    const user = await User.findById(req.user.id);
+
+    const conversationsWithUnread = await Promise.all(conversations.map(async (conv) => {
+      const lastSeen = user.lastSeen.get(conv._id.toString()) || new Date(0);
+      const unreadCount = await Message.countDocuments({
+        conversation: conv._id,
+        sender: { $ne: req.user.id },
+        createdAt: { $gt: lastSeen }
+      });
+      return { ...conv.toObject(), unreadCount };
+    }));
+
+    res.json(conversationsWithUnread);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -47,6 +60,12 @@ exports.getDMMessages = async (req, res) => {
       .skip(skip)
       .limit(limit);
       
+    // Update lastSeen for user
+    const User = require('../models/User');
+    await User.findByIdAndUpdate(req.user.id, {
+      [`lastSeen.${conversationId}`]: new Date()
+    });
+
     // Return in chronological order for frontend
     res.json(messages.reverse());
   } catch (error) {

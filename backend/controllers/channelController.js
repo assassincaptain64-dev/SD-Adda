@@ -46,6 +46,12 @@ exports.getChannelMessages = async (req, res) => {
       .skip(skip)
       .limit(limit);
       
+    // Update lastSeen for user
+    const User = require('../models/User');
+    await User.findByIdAndUpdate(req.user.id, {
+      [`lastSeen.${channelId}`]: new Date()
+    });
+
     res.json(messages.reverse());
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
