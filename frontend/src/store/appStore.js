@@ -4,12 +4,12 @@ import { io } from 'socket.io-client';
 import { useAuthStore } from './authStore';
 
 axios.defaults.withCredentials = true;
-const API_URL = (import.meta.env.PROD && (!import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL.includes('your-app-name')))
-  ? '/api'
+const API_URL = import.meta.env.PROD 
+  ? '/api' 
   : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
-const SOCKET_URL = (import.meta.env.PROD && (!import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_SOCKET_URL.includes('your-app-name')))
-  ? '/'
+const SOCKET_URL = import.meta.env.PROD 
+  ? '/' 
   : (import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000');
 
 export const useAppStore = create((set, get) => ({
