@@ -4,7 +4,7 @@
   "description": "SD-Adda Messaging Platform",
   "scripts": {
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "build": "cd frontend && npm install && npm run build",
+    "build": "cd frontend && npm install --include=dev && npm run build && cd ../backend && npm install",
     "start": "cd backend && node server.js",
     "dev": "npm run dev-backend & npm run dev-frontend",
     "dev-backend": "cd backend && npm start",

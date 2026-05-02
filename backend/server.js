@@ -13,7 +13,7 @@ const Conversation = require('./models/Conversation');
 const app = express();
 const server = http.createServer(app);
 
-const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' ? '*' : 'http://localhost:5173');
 
 const io = new Server(server, {
   cors: {
