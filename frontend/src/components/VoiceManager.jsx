@@ -27,8 +27,8 @@ export default function VoiceManager() {
     }
 
     const initZego = async () => {
-      const appID = parseInt(import.meta.env.VITE_ZEGO_APP_ID);
-      const serverSecret = import.meta.env.VITE_ZEGO_SERVER_SECRET;
+      const appID = parseInt(import.meta.env.VITE_ZEGO_APP_ID || process.env.ZEGO_APP_ID);
+      const serverSecret = import.meta.env.VITE_ZEGO_SERVER_SECRET || process.env.ZEGO_SERVER_SECRET;
       
       if (!appID || !serverSecret) {
         console.error('Zego Credentials missing');
