@@ -59,7 +59,7 @@ export default function Login() {
                 value={email} 
                 onChange={e=>setEmail(e.target.value)} 
                 required 
-                placeholder="stump1372@gmail.com"
+                placeholder="email@example.com"
                 className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-sagar-blue transition-all" 
               />
             </div>

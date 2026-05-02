@@ -1,0 +1,60 @@
+# SD-Adda Installation & Deployment Guide
+
+## 💻 Local Installation
+
+1.  **Clone the Repository:**
+    ```bash
+    git clone <your-repo-url>
+    cd SD-Adda
+    ```
+
+2.  **Install Dependencies:**
+    Run this in the root folder:
+    ```bash
+    npm run install-all
+    ```
+
+3.  **Setup Environment Variables:**
+    - Create `backend/.env` (see `backend/.env.example`)
+    - Create `frontend/.env` (see `frontend/.env.example`)
+
+4.  **Run Locally:**
+    - Start Backend: `cd backend && npm start`
+    - Start Frontend: `cd frontend && npm run dev`
+
+---
+
+## 🌐 Deployment on Render (Free)
+
+Follow these steps to deploy the entire app as a single service on Render:
+
+1.  **Create a New Web Service:**
+    - Sign in to [Render.com](https://render.com/).
+    - Click **"New"** -> **"Web Service"**.
+    - Connect your GitHub repository.
+
+2.  **Configure Service:**
+    - **Name:** `sd-adda`
+    - **Environment:** `Node`
+    - **Region:** Choose one close to you.
+    - **Branch:** `main`
+    - **Root Directory:** (Leave blank/root)
+    - **Build Command:** `npm run build`
+    - **Start Command:** `npm start`
+
+3.  **Environment Variables:**
+    Click **"Advanced"** -> **"Add Environment Variable"** and add:
+    - `MONGODB_URI` = (Your MongoDB Atlas Link)
+    - `JWT_SECRET` = (Random secure string)
+    - `ZEGO_APP_ID` = (Your Zego App ID)
+    - `ZEGO_SERVER_SECRET` = (Your Zego Server Secret)
+    - `NODE_ENV` = `production`
+    - `VITE_API_URL` = (Leave blank or point to your Render URL after deploy)
+
+4.  **Deploy:**
+    Render will now build your frontend and serve it via the backend automatically!
+
+---
+
+### 💡 Pro Tip for Render:
+The free tier spins down after 15 minutes of inactivity. The first person to visit the site might wait ~30 seconds for it to wake up. This is normal for free hosting!

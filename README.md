@@ -93,20 +93,15 @@ npm run dev
 
 ---
 
-## ☁️ Deployment Guide (Koyeb)
+## ☁️ Deployment Guide (Render)
 
-To deploy SD-Adda for free showcase:
+For a free production-grade deployment on **Render**, check the detailed [INSTALLATION.txt](file:///c:/Users/RIZA/Desktop/New%20folder%20(2)/INSTALLATION.txt) guide.
 
-### 1. Push to GitHub
-Ensure your code is pushed to your GitHub repository.
-
-### 2. Koyeb Setup
-1. Create a new **Service** on Koyeb.
-2. Select your GitHub repository.
-3. Choose **Docker** or **Node.js** runtime.
-4. **Environment Variables:** Add all the keys from your `.env` files.
-5. **Build Command:** `cd frontend && npm install && npm run build && cd ../backend && npm install`
-6. **Start Command:** `cd backend && NODE_ENV=production npm run start`
+### Quick Setup:
+1. Connect GitHub to Render.
+2. Build Command: `npm run build`
+3. Start Command: `npm start`
+4. Set `NODE_ENV=production` and all other environment variables in the Render dashboard.
 
 ---
 
