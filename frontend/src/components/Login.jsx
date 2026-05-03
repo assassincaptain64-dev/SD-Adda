@@ -30,13 +30,18 @@ export default function Login() {
       {/* Login Card */}
       <div className="relative z-20 bg-black/40 backdrop-blur-[20px] p-10 rounded-2xl w-[400px] shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] border border-white/10">
         <div className="flex flex-col items-center justify-center mb-8">
-          {/* Logo */}
-          <div className="relative w-14 h-14 bg-[#1E1F22] rounded-[16px] border border-sagar-blue/50 flex items-center justify-center overflow-hidden mb-4 shadow-[0_0_15px_rgba(67,97,238,0.2)]">
-            <div className="absolute inset-0 bg-gradient-to-br from-sagar-blue/20 to-transparent" />
-            <div className="relative flex flex-col items-center justify-center leading-none">
-              <span className="text-white font-black text-xl tracking-widest -mb-1">SD</span>
-              <div className="w-8 h-[1px] bg-sagar-blue opacity-50" />
-              <span className="text-sagar-blue font-bold text-[8px] tracking-[0.3em] mt-0.5">ADDA</span>
+          {/* New Neon Logo */}
+          <div className="group relative w-16 h-16 flex items-center justify-center mb-6">
+            <div className="absolute inset-0 bg-sagar-blue rounded-[20px] blur-lg opacity-30 group-hover:opacity-60 transition-opacity duration-500" />
+            <div className="relative w-16 h-16 bg-[#0a0b10] rounded-[18px] border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:border-sagar-blue group-hover:scale-110 shadow-2xl">
+              <div className="absolute inset-0 border border-sagar-blue/20 rounded-[18px]" />
+              <div className="relative flex flex-col items-center justify-center leading-none select-none">
+                <span className="text-white font-black text-[24px] tracking-tight drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]">SD</span>
+                <div className="flex items-center gap-1 mt-[-2px]">
+                  <span className="text-sagar-blue font-black text-[12px] tracking-[0.2em] group-hover:text-blue-400 transition-colors">ΛDDΛ</span>
+                </div>
+              </div>
+              <div className="absolute top-0 -left-[100%] w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-20deg] group-hover:animate-shine" />
             </div>
           </div>
           

@@ -15,6 +15,7 @@ export default function Home() {
   const [pending, setPending] = useState([]);
   const [searchUid, setSearchUid] = useState('');
   const [loading, setLoading] = useState(false);
+  const [dmSearchQuery, setDmSearchQuery] = useState('');
 
   const fetchFriends = async () => {
     try {
@@ -149,7 +150,14 @@ export default function Home() {
       <div className="w-60 bg-[#2B2D31] flex flex-col shrink-0">
         <div className="h-12 border-b border-[#1E1F22] flex items-center px-4 shadow-sm">
           <div className="w-full h-7 bg-[#1E1F22] rounded flex items-center px-2 text-xs text-gray-400">
-            Find or start a conversation
+            <Search size={14} className="mr-2" />
+            <input 
+              type="text" 
+              placeholder="Find or start a conversation" 
+              className="bg-transparent border-none outline-none w-full text-white"
+              value={dmSearchQuery}
+              onChange={(e) => setDmSearchQuery(e.target.value)}
+            />
           </div>
         </div>
 
@@ -170,37 +178,42 @@ export default function Home() {
           </div>
 
           <div className="space-y-0.5">
-            {conversations.map(conv => {
-              const otherParticipant = conv.participants.find(p => p._id !== user.id);
-              if (!otherParticipant) return null;
-              const unreadCount = unreadConversations[conv._id] || 0;
-              const isUnread = unreadCount > 0 && activeConversationId !== conv._id;
-              return (
-                <div
-                  key={conv._id}
-                  onClick={() => setActiveConversation(conv._id)}
-                  className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer group transition-colors relative ${activeConversationId === conv._id ? 'bg-[#3F4147] text-white' : 'text-gray-400 hover:bg-[#35373C] hover:text-gray-200'}`}
-                >
-                  {isUnread && (
-                    <div className="absolute left-[-4px] w-2 h-2 bg-white rounded-full shadow-[0_0_8px_white]" />
-                  )}
-                  {isUnread && (
-                    <div className="absolute right-2 bg-indigo-500 text-white text-[10px] px-1.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold border-2 border-[#2B2D31]">
-                      {unreadCount}
+            {conversations
+              .filter(conv => {
+                const other = conv.participants.find(p => p._id !== user.id);
+                return other?.username.toLowerCase().includes(dmSearchQuery.toLowerCase());
+              })
+              .map(conv => {
+                const otherParticipant = conv.participants.find(p => p._id !== user.id);
+                if (!otherParticipant) return null;
+                const unreadCount = unreadConversations[conv._id] || 0;
+                const isUnread = unreadCount > 0 && activeConversationId !== conv._id;
+                return (
+                  <div
+                    key={conv._id}
+                    onClick={() => setActiveConversation(conv._id)}
+                    className={`flex items-center px-2 py-1.5 rounded-md cursor-pointer group transition-colors relative ${activeConversationId === conv._id ? 'bg-[#3F4147] text-white' : 'text-gray-400 hover:bg-[#35373C] hover:text-gray-200'}`}
+                  >
+                    {isUnread && (
+                      <div className="absolute left-[-4px] w-2 h-2 bg-white rounded-full shadow-[0_0_8px_white]" />
+                    )}
+                    {isUnread && (
+                      <div className="absolute right-2 bg-indigo-500 text-white text-[10px] px-1.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold border-2 border-[#2B2D31]">
+                        {unreadCount}
+                      </div>
+                    )}
+                    <div className="relative mr-3">
+                      <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
+                        {otherParticipant.avatar ? <img src={otherParticipant.avatar} className="w-full h-full object-cover" /> : otherParticipant.username.charAt(0)}
+                      </div>
+                      <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#2B2D31] ${otherParticipant.status === 'online' ? 'bg-green-500' : 'bg-gray-500'}`} />
                     </div>
-                  )}
-                  <div className="relative mr-3">
-                    <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
-                      {otherParticipant.avatar ? <img src={otherParticipant.avatar} className="w-full h-full object-cover" /> : otherParticipant.username.charAt(0)}
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-sm truncate ${isUnread ? 'font-bold text-gray-100' : 'font-medium'}`}>{otherParticipant.username}</div>
                     </div>
-                    <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#2B2D31] ${otherParticipant.status === 'online' ? 'bg-green-500' : 'bg-gray-500'}`} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className={`text-sm truncate ${isUnread ? 'font-bold text-gray-100' : 'font-medium'}`}>{otherParticipant.username}</div>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         </div>
         <UserPanel />

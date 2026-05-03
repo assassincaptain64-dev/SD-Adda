@@ -38,25 +38,25 @@ export default function Sidebar() {
 
   return (
     <div className="w-[72px] bg-[#1E1F22] flex flex-col items-center py-3 space-y-2 shadow-xl z-20 shrink-0">
-      {/* SD-Adda Creative Brand Logo */}
-      <div className="group relative w-12 h-12 flex items-center justify-center mb-2">
+      <div className="group relative w-12 h-12 flex items-center justify-center mb-2" title="SD ADDA Home">
         {/* Glow Layer */}
         <div className="absolute inset-0 bg-sagar-blue rounded-[16px] blur-md opacity-20 group-hover:opacity-50 transition-opacity duration-500" />
         
-        {/* Outer Hexagon/Diamond Shield */}
-        <div className="relative w-11 h-11 bg-[#1E1F22] rounded-[14px] border-2 border-sagar-blue/30 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:border-sagar-blue group-hover:scale-105">
-          {/* Background Gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-sagar-blue/20 to-indigo-500/20" />
+        {/* Logo Container */}
+        <div className="relative w-11 h-11 bg-[#0a0b10] rounded-[14px] border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:border-sagar-blue group-hover:scale-105 shadow-2xl">
+          {/* Inner Neon Ring */}
+          <div className="absolute inset-0 border border-sagar-blue/20 rounded-[14px] group-hover:border-sagar-blue/40 transition-colors" />
           
-          {/* Stylized SD Letters */}
-          <div className="relative flex flex-col items-center justify-center leading-none">
-            <span className="text-white font-black text-[15px] tracking-widest translate-x-[-2px] -mb-1 group-hover:translate-x-0 transition-transform duration-500">SD</span>
-            <div className="w-6 h-[2px] bg-gradient-to-r from-transparent via-sagar-blue to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
-            <span className="text-sagar-blue font-bold text-[10px] tracking-[0.2em] mt-0.5 group-hover:text-white transition-colors duration-500">ADDA</span>
+          {/* Stylized SD ADDA Content */}
+          <div className="relative flex flex-col items-center justify-center leading-none select-none">
+            <span className="text-white font-black text-[18px] tracking-tight group-hover:text-white transition-colors duration-500 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">SD</span>
+            <div className="flex items-center gap-1 mt-[-2px]">
+              <span className="text-sagar-blue font-black text-[8px] tracking-[0.1em] group-hover:text-blue-400 transition-colors">ΛDDΛ</span>
+            </div>
           </div>
 
-          {/* Shine Effect */}
-          <div className="absolute top-0 -left-[100%] w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-[-20deg] group-hover:left-[100%] transition-all duration-1000 ease-in-out" />
+          {/* Shine Effect Animation */}
+          <div className="absolute top-0 -left-[100%] w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-20deg] group-hover:animate-shine" />
         </div>
       </div>
 
@@ -65,6 +65,7 @@ export default function Sidebar() {
         className={`relative w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-300
           ${isHome ? 'bg-sagar-blue text-white rounded-[16px]' : 'bg-[#313338] text-gray-100 rounded-[24px] hover:rounded-[16px] hover:bg-sagar-blue hover:text-white'}
         `}
+        title="Direct Messages"
       >
         <MessageSquare size={24} />
         {Object.values(unreadConversations).some(count => count > 0) && !isHome && (
@@ -88,6 +89,7 @@ export default function Sidebar() {
             className={`relative w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-300 font-bold text-lg
               ${activeServerId === server._id && !isHome ? 'bg-sagar-blue text-white rounded-[16px]' : 'bg-[#313338] text-gray-100 rounded-[24px] hover:rounded-[16px] hover:bg-sagar-blue hover:text-white'}
             `}
+            title={server.name}
           >
             {server.icon ? (
               <img src={server.icon} className="w-full h-full object-cover rounded-inherit" style={{ borderRadius: 'inherit' }} />
@@ -110,6 +112,7 @@ export default function Sidebar() {
         <div 
           onClick={() => setShowAddServer(true)}
           className="w-12 h-12 bg-[#313338] text-green-500 hover:bg-green-500 hover:text-white rounded-[24px] hover:rounded-[16px] transition-all duration-300 flex items-center justify-center cursor-pointer mt-2"
+          title="Add a Server"
         >
           <Plus size={24} />
         </div>
@@ -129,9 +132,9 @@ export default function Sidebar() {
       </div>
 
       {showAddServer && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="glassmorphism p-6 rounded-lg w-96">
-            <h3 className="text-xl font-bold mb-4 text-white">Add a Server</h3>
+        <div className="fixed inset-0 bg-[#0B0E11]/90 flex items-center justify-center z-50 backdrop-blur-md">
+          <div className="bg-[#313338] p-8 rounded-xl w-[440px] shadow-2xl border border-white/10 animate-slideIn">
+            <h3 className="text-2xl font-bold mb-6 text-white text-center">Add a Server</h3>
             <form onSubmit={handleCreate} className="mb-4">
               <input type="text" placeholder="Server Name" value={serverName} onChange={e=>setServerName(e.target.value)}
                 className="w-full bg-white/10 px-3 py-2 rounded text-white focus:outline-none mb-2 border border-white/10" />

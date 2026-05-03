@@ -276,108 +276,82 @@ export default function ChatWorkspace({ channel, isDM = false }) {
           </div>
         )}
         {messages.map((msg, idx) => {
-          const prevMsg = messages[idx-1];
+          const isSelf = msg.sender._id === user.id;
+          const prevMsg = messages[idx - 1];
           const isSameSenderAsPrev = idx > 0 && prevMsg.sender._id === msg.sender._id;
-          
-          // Show avatar if:
-          // 1. Different sender
-          // 2. More than 5 minutes since last message
-          // 3. Current message has attachments but previous one didn't (first image in a block)
           const timeDiff = prevMsg ? (new Date(msg.createdAt) - new Date(prevMsg.createdAt)) / (1000 * 60) : 0;
-          const showAvatar = !isSameSenderAsPrev || timeDiff > 5 || (msg.attachments && msg.attachments.length > 0 && (!prevMsg.attachments || prevMsg.attachments.length === 0));
-          
+          const showAvatar = !isSameSenderAsPrev || timeDiff > 2;
+
           return (
-            <div key={msg._id} className={`flex group hover:bg-[#2E3035] p-1 -mx-1 rounded ${!showAvatar ? 'mt-1' : 'mt-4'}`}>
-              {showAvatar ? (
-                <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold shrink-0 mr-4 cursor-pointer overflow-hidden">
-                  {msg.sender.avatar ? (
-                    <img src={msg.sender.avatar} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    msg.sender.username.charAt(0).toUpperCase()
-                  )}
-                </div>
-              ) : (
-                <div className="w-10 mr-4 shrink-0 flex items-center justify-center text-[10px] text-gray-500 opacity-0 group-hover:opacity-100">
-                  {formatTime(msg.createdAt)}
-                </div>
-              )}
-              
-              <div className="flex-1 min-w-0 relative">
-                {showAvatar && (
-                  <div className="flex items-baseline">
-                    <span className="font-medium text-white mr-2 hover:underline cursor-pointer truncate">{msg.sender.username}</span>
-                    <span className="text-xs text-gray-400 shrink-0">{formatTime(msg.createdAt)}</span>
-                  </div>
-                )}
-                
-                {editingMessageId === msg._id ? (
-                  <form 
-                    ref={editFormRef}
-                    onSubmit={handleUpdateMessage} 
-                    className="mt-1"
-                  >
-                    <textarea
-                      value={editingContent}
-                      onChange={(e) => setEditingContent(e.target.value)}
-                      autoFocus
-                      className="w-full bg-[#383A40] text-gray-200 p-2 rounded outline-none focus:ring-1 ring-indigo-500 min-h-[40px] resize-none"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleUpdateMessage(e);
-                        }
-                        if (e.key === 'Escape') {
-                          setEditingMessageId(null);
-                        }
-                      }}
-                    />
-                    <div className="text-[10px] text-gray-400 mt-1">
-                      escape to <button type="button" onClick={() => setEditingMessageId(null)} className="text-indigo-400 hover:underline">cancel</button> • enter to <button type="submit" className="text-indigo-400 hover:underline">save</button>
+            <div 
+              key={msg._id} 
+              className={`flex w-full mb-1 ${showAvatar ? 'mt-4' : 'mt-0.5'} ${isSelf ? 'justify-end' : 'justify-start'}`}
+            >
+              <div className={`flex max-w-[85%] sm:max-w-[70%] ${isSelf ? 'flex-row-reverse' : 'flex-row'} items-end group`}>
+                {/* Avatar/Spacer */}
+                {!isSelf ? (
+                  showAvatar ? (
+                    <div className="w-9 h-9 rounded-full overflow-hidden bg-indigo-500 shadow-sm border border-white/10 flex-shrink-0 self-start mt-1">
+                      {msg.sender.avatar ? <img src={msg.sender.avatar} className="w-full h-full object-cover" /> : <span className="text-[10px] flex items-center justify-center h-full text-white">{msg.sender.username.charAt(0)}</span>}
                     </div>
-                  </form>
-                ) : (
-                  <>
-                    {msg.content && (
-                      <div className="text-gray-300 whitespace-pre-wrap">
-                        {msg.content}
-                        {msg.isEdited && <span className="text-[10px] text-gray-500 ml-1">(edited)</span>}
+                  ) : (
+                    <div className="w-9 flex-shrink-0" />
+                  )
+                ) : null}
+
+                <div className={`flex flex-col ${isSelf ? 'items-end mr-3' : 'items-start ml-3'} max-w-full`}>
+                  {!isSelf && showAvatar && (
+                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-tight mb-1 ml-1">{msg.sender.username}</span>
+                  )}
+                  
+                  <div className={`message-bubble ${isSelf ? 'message-self' : 'message-other'} ${showAvatar ? '' : 'no-tail'}`}>
+                    {editingMessageId === msg._id ? (
+                      <form ref={editFormRef} onSubmit={handleUpdateMessage} className="min-w-[200px]">
+                        <textarea
+                          value={editingContent}
+                          onChange={(e) => setEditingContent(e.target.value)}
+                          autoFocus
+                          className="w-full bg-black/20 text-white p-2 rounded outline-none min-h-[40px] resize-none text-sm"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleUpdateMessage(e); }
+                            if (e.key === 'Escape') setEditingMessageId(null);
+                          }}
+                        />
+                        <div className="text-[9px] text-gray-300 mt-1 opacity-70 italic">Esc to cancel • Enter to save</div>
+                      </form>
+                    ) : (
+                      <div className="flex flex-col">
+                        {msg.content && <div className="whitespace-pre-wrap break-words">{msg.content}</div>}
+                        
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {msg.attachments.map((url, i) => (
+                              <img key={i} src={url} alt="Attachment" className="max-w-full max-h-60 rounded-md cursor-pointer hover:brightness-110 transition-all shadow-md" onClick={() => setLightboxImage(url)} />
+                            ))}
+                          </div>
+                        )}
+                        
+                        <div className={`text-[9px] mt-1 flex items-center gap-1.5 ${isSelf ? 'text-green-200/60 justify-end' : 'text-gray-400 justify-start'}`}>
+                          {formatTime(msg.createdAt)}
+                          {msg.isEdited && <span className="italic">(edited)</span>}
+                        </div>
                       </div>
                     )}
-                  </>
-                )}
-                
-                {msg.attachments && msg.attachments.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {msg.attachments.map((url, i) => (
-                      <div key={i} className="max-w-sm rounded overflow-hidden">
-                        <img 
-                          src={url} 
-                          alt="Attachment" 
-                          className="max-w-full max-h-80 object-contain bg-black/20 rounded cursor-pointer hover:opacity-90 transition-opacity" 
-                          onClick={() => setLightboxImage(url)}
-                        />
-                      </div>
-                    ))}
                   </div>
-                )}
 
-                {/* Message Actions */}
-                {msg.sender._id === user.id && !editingMessageId && (
-                  <div className="absolute -top-4 right-0 flex bg-[#313338] border border-[#1E1F22] rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button 
-                      onClick={() => { setEditingMessageId(msg._id); setEditingContent(msg.content); }}
-                      className="p-1.5 text-gray-400 hover:text-white hover:bg-[#3F4147] transition-colors"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteMessage(msg._id)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-[#3F4147] transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                )}
+                  {/* Actions Overlay */}
+                  {isSelf && !editingMessageId && (
+                    <div className="absolute -left-12 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => { setEditingMessageId(msg._id); setEditingContent(msg.content); }} className="p-1.5 bg-[#1E1F22] rounded-full text-gray-400 hover:text-white border border-white/5 shadow-xl"><Edit2 size={12} /></button>
+                      <button onClick={() => handleDeleteMessage(msg._id)} className="p-1.5 bg-[#1E1F22] rounded-full text-gray-400 hover:text-red-500 border border-white/5 shadow-xl"><Trash2 size={12} /></button>
+                    </div>
+                  )}
+                  {!isSelf && !editingMessageId && (
+                    <div className="absolute -right-8 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Others actions could go here (e.g. report/reply) */}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           );

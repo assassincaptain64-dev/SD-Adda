@@ -2,18 +2,85 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --primary: #007BFF;
+    --primary-dark: #0056b3;
+    --bg-main: #0B0E11;
+    --bg-sidebar: #131313;
+    --bg-chat: #1B1B1B;
+    --bg-bubble-self: #005C4B;
+    --bg-bubble-other: #202C33;
+  }
+
+  body {
+    @apply bg-[#0B0E11] text-gray-100 m-0 p-0 font-sans;
+    background-image: radial-gradient(circle at top right, rgba(0, 123, 255, 0.05), transparent 400px),
+                      radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.05), transparent 400px);
+  }
+}
+
 @layer utilities {
-  .glassmorphism {
-    @apply bg-white/10 backdrop-blur-md border border-white/20;
+  .glass-panel {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/5;
+  }
+  
+  .message-bubble {
+    @apply relative px-3 py-2 rounded-lg text-[14.5px] max-w-full shadow-sm transition-all duration-200;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  
+  /* WhatsApp-style tails */
+  .message-self {
+    @apply bg-[#005C4B] text-white self-end rounded-tr-none;
+  }
+  .message-self::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: calc(-12px + 2px); /* Calc for consistent perfection */
+    width: 12px;
+    height: 12px;
+    background: #005C4B;
+    clip-path: polygon(0 0, 0% 100%, 100% 0);
+  }
+  
+  .message-other {
+    @apply bg-[#202C33] text-[#E9EDEF] self-start rounded-tl-none;
+  }
+  .message-other::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: calc(-12px + 2px); /* Precise gap from avatar */
+    width: 12px;
+    height: 12px;
+    background: #202C33;
+    clip-path: polygon(100% 0, 100% 100%, 0 0);
+  }
+
+  .no-tail::after {
+    display: none !important;
   }
 }
 
 @keyframes speak-pulse {
-  0% { box-shadow: 0 0 0 2px #22c55e; }
-  50% { box-shadow: 0 0 0 4px #22c55e; }
-  100% { box-shadow: 0 0 0 2px #22c55e; }
+  0% { box-shadow: 0 0 0 2px #22c55e; transform: scale(1); }
+  50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.4); transform: scale(1.05); }
+  100% { box-shadow: 0 0 0 2px #22c55e; transform: scale(1); }
 }
 
-body {
-  @apply bg-gray-900 text-gray-100 m-0 p-0 font-sans;
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
