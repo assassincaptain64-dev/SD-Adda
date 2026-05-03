@@ -126,8 +126,8 @@ export default function Sidebar() {
         >
           <LogOut size={18} />
         </div>
-        <p className="text-[10px] text-gray-500 text-center leading-tight">
-          copyright Sagar Dey 2026.<br/>All Rights Reserved
+        <p className="text-[10px] text-gray-500 text-center leading-tight mb-2 opacity-50 hover:opacity-100 transition-opacity">
+          © 2026 Sagar Dey. All Rights Reserved
         </p>
       </div>
 
