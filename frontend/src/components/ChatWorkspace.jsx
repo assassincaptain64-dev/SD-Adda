@@ -103,6 +103,25 @@ export default function ChatWorkspace({ channel, isDM = false }) {
     };
   }, [channel, isDM, socket]);
 
+  const editFormRef = useRef(null);
+  const [lightboxImage, setLightboxImage] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (editFormRef.current && !editFormRef.current.contains(event.target)) {
+        setEditingMessageId(null);
+      }
+    };
+
+    if (editingMessageId) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [editingMessageId]);
+
   useEffect(() => {
     if (skip === 0) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -110,10 +129,14 @@ export default function ChatWorkspace({ channel, isDM = false }) {
   }, [messages, skip]);
 
   const handleFileSelect = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files ? e.target.files[0] : null;
+    processFile(file);
+  };
+
+  const processFile = (file) => {
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert("File must be smaller than 5MB");
+      if (file.size > 30 * 1024 * 1024) {
+        alert("File must be smaller than 30MB");
         return;
       }
       setAttachment(file);
@@ -121,6 +144,25 @@ export default function ChatWorkspace({ channel, isDM = false }) {
       reader.onloadend = () => setAttachmentPreview(reader.result);
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files ? e.dataTransfer.files[0] : null;
+    if (file && file.type.startsWith('image/')) {
+      processFile(file);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
   };
 
   const removeAttachment = () => {
@@ -196,7 +238,12 @@ export default function ChatWorkspace({ channel, isDM = false }) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#313338]">
+    <div 
+      className="flex flex-col h-full bg-[#313338] relative"
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+    >
       {/* Header */}
       <div className="h-12 flex items-center justify-between px-4 border-b border-[#1E1F22] shadow-sm shrink-0">
         <div className="flex items-center">
@@ -264,7 +311,11 @@ export default function ChatWorkspace({ channel, isDM = false }) {
                 )}
                 
                 {editingMessageId === msg._id ? (
-                  <form onSubmit={handleUpdateMessage} className="mt-1">
+                  <form 
+                    ref={editFormRef}
+                    onSubmit={handleUpdateMessage} 
+                    className="mt-1"
+                  >
                     <textarea
                       value={editingContent}
                       onChange={(e) => setEditingContent(e.target.value)}
@@ -299,7 +350,12 @@ export default function ChatWorkspace({ channel, isDM = false }) {
                   <div className="mt-2 flex flex-wrap gap-2">
                     {msg.attachments.map((url, i) => (
                       <div key={i} className="max-w-sm rounded overflow-hidden">
-                        <img src={url} alt="Attachment" className="max-w-full max-h-80 object-contain bg-black/20 rounded" />
+                        <img 
+                          src={url} 
+                          alt="Attachment" 
+                          className="max-w-full max-h-80 object-contain bg-black/20 rounded cursor-pointer hover:opacity-90 transition-opacity" 
+                          onClick={() => setLightboxImage(url)}
+                        />
                       </div>
                     ))}
                   </div>
@@ -443,6 +499,38 @@ export default function ChatWorkspace({ channel, isDM = false }) {
         </div>
       )}
       </div>
+      
+      {/* Drag & Drop Overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 bg-[#313338]/90 z-40 flex items-center justify-center backdrop-blur-sm border-2 border-dashed border-indigo-500 m-2 rounded-xl pointer-events-none transition-all duration-200">
+          <div className="flex flex-col items-center bg-black/40 p-8 rounded-2xl shadow-2xl">
+            <PlusCircle size={64} className="text-indigo-400 mb-4 animate-bounce" />
+            <h2 className="text-2xl font-bold text-white mb-2">Drop it like it's hot</h2>
+            <p className="text-gray-300">Add this image to your message</p>
+          </div>
+        </div>
+      )}
+
+      {/* Media Lightbox */}
+      {lightboxImage && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 cursor-zoom-out animate-slideIn"
+          onClick={() => setLightboxImage(null)}
+        >
+          <button 
+            className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors p-2 bg-white/5 hover:bg-white/10 rounded-full"
+            onClick={() => setLightboxImage(null)}
+          >
+            <X size={32} />
+          </button>
+          <img 
+            src={lightboxImage} 
+            alt="Expanded Media" 
+            className="max-w-full max-h-full object-contain drop-shadow-2xl rounded"
+            onClick={(e) => e.stopPropagation()} 
+          />
+        </div>
+      )}
     </div>
   );
 }

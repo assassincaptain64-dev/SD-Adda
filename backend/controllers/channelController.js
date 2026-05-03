@@ -26,6 +26,7 @@ exports.createChannel = async (req, res) => {
     await server.save();
 
     const io = req.app.get('io');
+    // Important: Emit to everyone so all online members of the server see the new channel instantly
     io.emit('channel_created', { serverId, channel });
 
     res.status(201).json(channel);

@@ -164,3 +164,65 @@ exports.kickFromServer = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+exports.updateServer = async (req, res) => {
+  try {
+    const { serverId } = req.params;
+    const { name, icon } = req.body;
+    
+    const server = await Server.findById(serverId);
+    if (!server) return res.status(404).json({ message: 'Server not found' });
+    
+    if (server.owner.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only owner can update server' });
+    }
+    
+    if (name) server.name = name;
+    if (icon !== undefined) server.icon = icon;
+    
+    await server.save();
+    
+    const io = req.app.get('io');
+    io.emit('server_updated', server);
+    
+    res.json(server);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+exports.deleteServer = async (req, res) => {
+  try {
+    const { serverId } = req.params;
+    
+    const server = await Server.findById(serverId);
+    if (!server) return res.status(404).json({ message: 'Server not found' });
+    
+    if (server.owner.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only owner can delete server' });
+    }
+    
+    // Remove server from all users
+    await User.updateMany(
+      { servers: serverId },
+      { $pull: { servers: serverId } }
+    );
+    
+    // Get all channel IDs before deleting them to kick voice users
+    const serverChannels = await Channel.find({ server: serverId });
+    const channelIds = serverChannels.map(c => c._id.toString());
+
+    // Delete all channels associated with this server
+    await Channel.deleteMany({ server: serverId });
+    
+    // Delete the server
+    await Server.findByIdAndDelete(serverId);
+    
+    const io = req.app.get('io');
+    io.emit('server_deleted', { serverId, channelIds });
+    
+    res.json({ message: 'Server deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};

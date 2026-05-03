@@ -6,7 +6,7 @@ const multer = require('multer');
 
 // Configure multer to use memory storage
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB limit
+const upload = multer({ storage: storage, limits: { fileSize: 30 * 1024 * 1024 } }); // 30MB limit
 
 router.post('/avatar', authMiddleware, upload.single('image'), uploadController.uploadAvatar);
 router.post('/image', authMiddleware, upload.single('image'), uploadController.uploadImage);

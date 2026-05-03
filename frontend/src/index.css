@@ -8,6 +8,12 @@
   }
 }
 
+@keyframes speak-pulse {
+  0% { box-shadow: 0 0 0 2px #22c55e; }
+  50% { box-shadow: 0 0 0 4px #22c55e; }
+  100% { box-shadow: 0 0 0 2px #22c55e; }
+}
+
 body {
   @apply bg-gray-900 text-gray-100 m-0 p-0 font-sans;
 }

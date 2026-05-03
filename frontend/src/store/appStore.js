@@ -2,14 +2,15 @@ import { create } from 'zustand';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { useAuthStore } from './authStore';
+import { playMessageSound, playJoinSound, playLeaveSound } from '../utils/sounds';
 
 axios.defaults.withCredentials = true;
-const API_URL = import.meta.env.PROD 
-  ? '/api' 
+const API_URL = import.meta.env.PROD
+  ? '/api'
   : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
-const SOCKET_URL = import.meta.env.PROD 
-  ? '/' 
+const SOCKET_URL = import.meta.env.PROD
+  ? '/'
   : (import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000');
 
 export const useAppStore = create((set, get) => ({
@@ -27,7 +28,15 @@ export const useAppStore = create((set, get) => ({
   unreadConversations: {}, // conversationId -> count
   voiceUsers: {}, // channelId -> [users]
   currentVoiceChannelId: null, // Track global voice session
-  
+  toastMessage: null,
+
+  showToast: (message) => {
+    set({ toastMessage: message });
+    setTimeout(() => {
+      set(state => state.toastMessage === message ? { toastMessage: null } : state);
+    }, 4000);
+  },
+
   resetStore: () => {
     const socket = get().socket;
     if (socket) socket.disconnect();
@@ -48,7 +57,7 @@ export const useAppStore = create((set, get) => ({
       currentVoiceChannelId: null
     });
   },
-  
+
   setIsHome: (val) => set({ isHome: val, activeServerId: val ? null : get().activeServerId, activeConversationId: null }),
   setConversations: (conversations) => {
     const unreadMap = {};
@@ -71,12 +80,12 @@ export const useAppStore = create((set, get) => ({
     const socket = io(SOCKET_URL, { withCredentials: true });
     socket.emit('user_connected', userId);
     get().fetchUnreadSummary();
-    
+
     socket.on('receive_message', (message) => {
       const state = get();
       const currentChannelId = state.activeChannelId;
       const currentConvId = state.activeConversationId;
-      
+
       const targetId = message.channel || message.conversation;
       const isDM = !!message.conversation;
 
@@ -84,7 +93,7 @@ export const useAppStore = create((set, get) => ({
       if (targetId === currentChannelId || targetId === currentConvId) {
         set(state => ({ messages: [...state.messages, message] }));
         // Sync read status with backend immediately so refresh doesn't show it as unread
-        axios.post(`${API_URL}/messages/read/${targetId}`).catch(() => {});
+        axios.post(`${API_URL}/messages/read/${targetId}`).catch(() => { });
       } else {
         // Otherwise, mark as unread
         if (isDM) {
@@ -98,6 +107,13 @@ export const useAppStore = create((set, get) => ({
         }
       }
 
+      // 🔊 Real-time Sync for Sounds: Corrected to handle both object and string IDs
+      const { user } = useAuthStore.getState();
+      const senderId = message.sender._id || message.sender;
+      if (senderId !== user.id) {
+        playMessageSound();
+      }
+
       // If it's a DM and we don't have this conversation in our list, refresh the list
       if (isDM && !state.conversations.some(c => c._id === message.conversation)) {
         get().fetchConversations();
@@ -107,9 +123,9 @@ export const useAppStore = create((set, get) => ({
     socket.on('user_update', ({ userId, avatar, username }) => {
       // Update messages
       set(state => ({
-        messages: state.messages.map(msg => 
-          msg.sender._id === userId 
-            ? { ...msg, sender: { ...msg.sender, avatar: avatar || msg.sender.avatar, username: username || msg.sender.username } } 
+        messages: state.messages.map(msg =>
+          msg.sender._id === userId
+            ? { ...msg, sender: { ...msg.sender, avatar: avatar || msg.sender.avatar, username: username || msg.sender.username } }
             : msg
         )
       }));
@@ -117,9 +133,9 @@ export const useAppStore = create((set, get) => ({
       set(state => ({
         conversations: state.conversations.map(conv => ({
           ...conv,
-          participants: conv.participants.map(p => 
-            p._id === userId 
-              ? { ...p, avatar: avatar || p.avatar, username: username || p.username } 
+          participants: conv.participants.map(p =>
+            p._id === userId
+              ? { ...p, avatar: avatar || p.avatar, username: username || p.username }
               : p
           )
         }))
@@ -132,7 +148,16 @@ export const useAppStore = create((set, get) => ({
             : m
         )
       }));
-      // Note: setFriends is in Home.jsx, we might need to handle it there too or move it here
+      // Update voice users in all channels for the sidebar sync
+      set(state => {
+        const newVoiceUsers = { ...state.voiceUsers };
+        Object.keys(newVoiceUsers).forEach(channelId => {
+          newVoiceUsers[channelId] = newVoiceUsers[channelId].map(vUser =>
+            vUser.id === userId ? { ...vUser, avatar: avatar || vUser.avatar } : vUser
+          );
+        });
+        return { voiceUsers: newVoiceUsers };
+      });
     });
 
     socket.on('channel_created', ({ serverId, channel }) => {
@@ -154,15 +179,23 @@ export const useAppStore = create((set, get) => ({
     });
 
     socket.on('voice_users_update', ({ channelId, users }) => {
-      set(state => ({
-        voiceUsers: { ...state.voiceUsers, [channelId]: users }
-      }));
+      set(state => {
+        const oldUsers = state.voiceUsers[channelId] || [];
+        if (users.length > oldUsers.length) {
+          playJoinSound();
+        } else if (users.length < oldUsers.length) {
+          playLeaveSound();
+        }
+        return {
+          voiceUsers: { ...state.voiceUsers, [channelId]: users }
+        };
+      });
     });
 
     socket.on('force_leave_voice', () => {
       // User was kicked from voice
       get().leaveVoice();
-      alert('You have been disconnected from the voice channel by a moderator.');
+      get().showToast('You have been disconnected from the voice channel by a moderator.');
     });
 
     socket.on('kicked_from_server', ({ serverId, userId }) => {
@@ -172,10 +205,10 @@ export const useAppStore = create((set, get) => ({
         set(state => ({
           servers: state.servers.filter(s => s._id !== serverId)
         }));
-        
+
         if (get().activeServerId === serverId) {
           get().setIsHome(true);
-          alert('You have been removed from the server.');
+          get().showToast('You have been removed from the server.');
         }
       } else {
         // Someone else was kicked
@@ -190,11 +223,33 @@ export const useAppStore = create((set, get) => ({
     socket.on('member_joined_server', ({ serverId, member }) => {
       if (get().activeServerId === serverId) {
         set(state => {
-          // Prevent duplicates
           const exists = state.activeServerMembers.some(m => (m._id || m.id) === (member._id || member.id));
           if (exists) return state;
           return { activeServerMembers: [...state.activeServerMembers, member] };
         });
+      }
+    });
+
+    socket.on('server_updated', (updatedServer) => {
+      set(state => ({
+        servers: state.servers.map(s => s._id === updatedServer._id ? { ...s, ...updatedServer } : s)
+      }));
+    });
+
+    socket.on('server_deleted', ({ serverId, channelIds }) => {
+      set(state => ({
+        servers: state.servers.filter(s => s._id !== serverId)
+      }));
+
+      // If user is currently in a voice channel that was just deleted, force leave
+      const currentVoiceId = get().currentVoiceChannelId;
+      if (currentVoiceId && channelIds?.includes(currentVoiceId)) {
+        get().leaveVoice();
+      }
+
+      if (get().activeServerId === serverId) {
+        get().setIsHome(true);
+        get().showToast('This server has been deleted by the owner.');
       }
     });
 
@@ -208,9 +263,9 @@ export const useAppStore = create((set, get) => ({
     const { socket, currentVoiceChannelId } = get();
     const { user } = useAuthStore.getState();
     if (currentVoiceChannelId === channelId) return;
-    
+
     if (currentVoiceChannelId) get().leaveVoice();
-    
+
     set({ currentVoiceChannelId: channelId });
     if (socket) {
       socket.emit('join_voice', { channelId, user: { id: user.id, username: user.username, avatar: user.avatar } });
@@ -221,7 +276,7 @@ export const useAppStore = create((set, get) => ({
     const { socket, currentVoiceChannelId } = get();
     const { user } = useAuthStore.getState();
     if (!currentVoiceChannelId) return;
-    
+
     if (socket) {
       socket.emit('leave_voice', { channelId: currentVoiceChannelId, userId: user.id });
     }
@@ -234,7 +289,7 @@ export const useAppStore = create((set, get) => ({
       set({ socket: null });
     }
   },
-  
+
   fetchServers: async () => {
     try {
       const res = await axios.get(`${API_URL}/servers`);
@@ -277,15 +332,15 @@ export const useAppStore = create((set, get) => ({
       res.data.channels.forEach(ch => {
         if (ch.unreadCount > 0) unreadMap[ch._id] = ch.unreadCount;
       });
-      set({ 
-        channels: res.data.channels, 
+      set({
+        channels: res.data.channels,
         activeServerId: serverId,
         activeServerMembers: res.data.members || [],
         unreadChannels: { ...get().unreadChannels, ...unreadMap }
       });
       if (res.data.channels.length > 0) {
         set({ activeChannelId: res.data.channels[0]._id });
-        if(res.data.channels[0].type === 'TEXT') {
+        if (res.data.channels[0].type === 'TEXT') {
           get().fetchMessages(res.data.channels[0]._id);
         }
       }
@@ -340,8 +395,8 @@ export const useAppStore = create((set, get) => ({
     try {
       const res = await axios.get(`${API_URL}/auth/unread-summary`);
       const { unreadChannels, unreadConversations } = res.data;
-      
-      set({ 
+
+      set({
         unreadChannels,
         unreadConversations
       });

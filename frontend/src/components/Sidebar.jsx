@@ -89,7 +89,11 @@ export default function Sidebar() {
               ${activeServerId === server._id && !isHome ? 'bg-sagar-blue text-white rounded-[16px]' : 'bg-[#313338] text-gray-100 rounded-[24px] hover:rounded-[16px] hover:bg-sagar-blue hover:text-white'}
             `}
           >
-            {server.name.charAt(0).toUpperCase()}
+            {server.icon ? (
+              <img src={server.icon} className="w-full h-full object-cover rounded-inherit" style={{ borderRadius: 'inherit' }} />
+            ) : (
+              server.name.charAt(0).toUpperCase()
+            )}
             {/* Server unread dot: reactive to unreadChannels map */}
             {server.channels?.some(ch => {
               const chId = typeof ch === 'string' ? ch : ch._id;

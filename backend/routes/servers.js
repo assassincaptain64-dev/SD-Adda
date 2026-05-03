@@ -8,5 +8,7 @@ router.post('/join', authMiddleware, serverController.joinServer);
 router.get('/', authMiddleware, serverController.getUserServers);
 router.get('/:serverId', authMiddleware, serverController.getServerById);
 router.post('/:serverId/kick/:userId', authMiddleware, serverController.kickFromServer);
+router.put('/:serverId', authMiddleware, serverController.updateServer);
+router.delete('/:serverId', authMiddleware, serverController.deleteServer);
 
 module.exports = router;

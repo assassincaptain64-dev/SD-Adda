@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
-import { Hash, Volume2, Plus, UserMinus } from 'lucide-react';
+import UserPanel from './UserPanel';
+import ServerSettingsModal from './ServerSettingsModal';
+import { Hash, Volume2, Plus, UserMinus, Settings } from 'lucide-react';
 import axios from 'axios';
 import { API_URL } from '../api';
-import UserPanel from './UserPanel';
 
 export default function ChannelList() {
   const { servers, activeServerId, channels, activeChannelId, setActiveChannel, fetchServerDetails, unreadChannels, voiceUsers, joinVoice, socket } = useAppStore();
@@ -12,6 +13,7 @@ export default function ChannelList() {
   const [showAddChannel, setShowAddChannel] = useState(false);
   const [channelName, setChannelName] = useState('');
   const [channelType, setChannelType] = useState('TEXT');
+  const [showServerSettings, setShowServerSettings] = useState(false);
 
   const handleVoiceClick = (id) => {
     setActiveChannel(id, 'VOICE');
@@ -27,7 +29,7 @@ export default function ChannelList() {
     e.preventDefault();
     if (channelName && activeServerId) {
       try {
-            await axios.post(`${API_URL}/channels/server/${activeServerId}`, {
+        await axios.post(`${API_URL}/channels/server/${activeServerId}`, {
           name: channelName,
           type: channelType
         });
@@ -42,20 +44,38 @@ export default function ChannelList() {
 
   return (
     <div className="w-60 bg-[#1E1F22]/80 backdrop-blur-xl border-r border-white/5 flex flex-col h-full shrink-0 relative z-10">
-      <div className="h-16 flex flex-col justify-center px-4 border-b border-[#1E1F22] shadow-sm">
-        <h2 className="font-bold text-white truncate">{activeServer?.name || 'Server'}</h2>
+      <div className="h-16 flex flex-col justify-center px-4 border-b border-[#1E1F22] shadow-sm relative group">
+        <div className="flex items-center justify-between">
+          <h2 className="font-bold text-white truncate">{activeServer?.name || 'Server'}</h2>
+          {activeServer?.owner === user.id && (
+            <button 
+              onClick={() => setShowServerSettings(true)}
+              className="p-1 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-all opacity-0 group-hover:opacity-100"
+              title="Server Settings"
+            >
+              <Settings size={16} />
+            </button>
+          )}
+        </div>
         {activeServer?.inviteCode && (
-          <div className="flex items-center text-xs text-gray-400 mt-1 cursor-pointer hover:text-gray-200" 
-               onClick={() => {
-                 navigator.clipboard.writeText(activeServer.inviteCode);
-                 alert(`Invite code copied: ${activeServer.inviteCode}`);
-               }}>
+          <div className="flex items-center text-xs text-gray-400 mt-1 cursor-pointer hover:text-gray-200"
+            onClick={() => {
+              navigator.clipboard.writeText(activeServer.inviteCode);
+              alert(`Invite code copied: ${activeServer.inviteCode}`);
+            }}>
             <span className="font-mono bg-black/20 px-1 rounded">Code: {activeServer.inviteCode}</span>
             <span className="ml-2 text-[10px] opacity-0 hover:opacity-100">(Click to copy)</span>
           </div>
         )}
       </div>
-      
+
+      {showServerSettings && (
+        <ServerSettingsModal 
+          server={activeServer} 
+          onClose={() => setShowServerSettings(false)} 
+        />
+      )}
+
       <div className="flex-1 overflow-y-auto py-4 px-2 space-y-4 custom-scrollbar">
         {/* Text Channels */}
         <div>
@@ -67,7 +87,7 @@ export default function ChannelList() {
           </div>
           <div className="space-y-[2px]">
             {textChannels.map(channel => (
-              <div 
+              <div
                 key={channel._id}
                 onClick={() => setActiveChannel(channel._id, 'TEXT')}
                 className={`flex items-center px-2 py-2 rounded-md cursor-pointer group relative transition-all duration-300
@@ -102,7 +122,7 @@ export default function ChannelList() {
           <div className="space-y-[2px]">
             {voiceChannels.map(channel => (
               <div key={channel._id}>
-                <div 
+                <div
                   onClick={() => handleVoiceClick(channel._id)}
                   className={`flex items-center px-2 py-2 rounded-md cursor-pointer group transition-all duration-300 relative
                     ${activeChannelId === channel._id ? 'bg-gradient-to-r from-green-500/20 to-transparent text-white border-l-2 border-green-500' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border-l-2 border-transparent'}
@@ -122,10 +142,10 @@ export default function ChannelList() {
                         <span className="truncate group-hover/user:text-white transition-colors drop-shadow-md">{vUser.username}</span>
                       </div>
                       {activeServer?.owner === user.id && vUser.id !== user.id && (
-                        <button 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            if(window.confirm('Kick from voice?')) {
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm('Kick from voice?')) {
                               socket.emit('kick_from_voice', { channelId: channel._id, targetUserId: vUser.id });
                             }
                           }}
@@ -160,7 +180,7 @@ export default function ChannelList() {
                   <span className="absolute left-3 text-gray-400">
                     {channelType === 'TEXT' ? <Hash size={18} /> : <Volume2 size={18} />}
                   </span>
-                  <input type="text" placeholder="new-channel" value={channelName} onChange={e=>setChannelName(e.target.value)} required
+                  <input type="text" placeholder="new-channel" value={channelName} onChange={e => setChannelName(e.target.value)} required
                     className="w-full bg-[#1E1F22] px-10 py-2 rounded text-white focus:outline-none focus:ring-1 focus:ring-sagar-blue" />
                 </div>
               </div>
