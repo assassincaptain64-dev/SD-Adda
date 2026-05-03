@@ -291,8 +291,8 @@ export default function Home() {
                     {pending.map(p => (
                       <div key={p._id} className="flex items-center justify-between p-3 hover:bg-[#3F4147] rounded-lg group border-t border-gray-700/50">
                         <div className="flex items-center">
-                          <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold mr-3 overflow-hidden">
-                            {p.sender.avatar ? <img src={p.sender.avatar} className="w-full h-full object-cover" /> : p.sender.username.charAt(0)}
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold mr-3 overflow-hidden shadow-md">
+                            {p.sender.avatar ? <img src={p.sender.avatar} className="w-full h-full object-cover" /> : p.sender.username.charAt(0).toUpperCase()}
                           </div>
                           <div>
                             <div className="text-white font-bold">{p.sender.username}</div>
@@ -324,8 +324,8 @@ export default function Home() {
                       >
                         <div className="flex items-center">
                           <div className="relative">
-                            <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold mr-3 overflow-hidden">
-                              {friend.avatar ? <img src={friend.avatar} className="w-full h-full object-cover" /> : friend.username.charAt(0)}
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold mr-3 overflow-hidden shadow-md">
+                              {friend.avatar ? <img src={friend.avatar} className="w-full h-full object-cover" /> : friend.username.charAt(0).toUpperCase()}
                             </div>
                             <div className={`absolute bottom-0 right-3 w-3 h-3 rounded-full border-2 border-[#313338] ${friend.status === 'online' ? 'bg-green-500' : 'bg-gray-500'}`} />
                           </div>

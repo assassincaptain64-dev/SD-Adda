@@ -66,6 +66,7 @@ export default function VoiceManager() {
           showQuitButton: true,
           turnOnMicrophoneWhenJoining: true,
           turnOnCameraWhenJoining: false,
+          showUserList: false, // Hide the built-in Zego member list
           layout: "Auto",
           onLeaveRoom: () => {
             leaveVoice();

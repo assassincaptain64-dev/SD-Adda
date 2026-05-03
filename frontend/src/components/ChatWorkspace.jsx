@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
-import { Hash, Send, PlusCircle, Image as ImageIcon, X, Smile, Edit2, Trash2 } from 'lucide-react';
+import { Hash, Send, PlusCircle, Image as ImageIcon, X, Smile, Edit2, Trash2, Users, UserMinus } from 'lucide-react';
 import axios from 'axios';
 import { API_URL } from '../api';
 import EmojiPicker from 'emoji-picker-react';
@@ -16,6 +16,20 @@ export default function ChatWorkspace({ channel, isDM = false }) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editingContent, setEditingContent] = useState('');
+  const [showMembers, setShowMembers] = useState(true);
+
+  const { activeServerMembers, activeServerId, servers } = useAppStore();
+  const activeServer = servers.find(s => s._id === activeServerId);
+  const isOwner = activeServer?.owner === user.id;
+
+  const handleKickMember = async (memberId) => {
+    if (!window.confirm('Are you sure you want to kick this member?')) return;
+    try {
+      await axios.post(`${API_URL}/servers/${activeServerId}/kick/${memberId}`, {}, { withCredentials: true });
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to kick member');
+    }
+  };
 
   const handleEmojiClick = (emojiData) => {
     setNewMessage(prev => prev + emojiData.emoji);
@@ -184,12 +198,26 @@ export default function ChatWorkspace({ channel, isDM = false }) {
   return (
     <div className="flex flex-col h-full bg-[#313338]">
       {/* Header */}
-      <div className="h-12 flex items-center px-4 border-b border-[#1E1F22] shadow-sm shrink-0">
-        <Hash size={24} className="text-gray-400 mr-2" />
-        <h2 className="font-bold text-white">{channel.name}</h2>
+      <div className="h-12 flex items-center justify-between px-4 border-b border-[#1E1F22] shadow-sm shrink-0">
+        <div className="flex items-center">
+          <Hash size={24} className="text-gray-400 mr-2" />
+          <h2 className="font-bold text-white">{channel.name}</h2>
+        </div>
+        {!isDM && (
+          <button 
+            onClick={() => setShowMembers(!showMembers)}
+            className={`p-1.5 rounded hover:bg-[#3F4147] transition-colors ${showMembers ? 'text-white' : 'text-gray-400'}`}
+            title="Toggle Members"
+          >
+            <Users size={20} />
+          </button>
+        )}
       </div>
 
-      {/* Messages */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Main Chat Area */}
+        <div className="flex flex-col flex-1 min-w-0">
+          {/* Messages */}
       <div 
         ref={scrollContainerRef}
         onScroll={handleScroll}
@@ -374,6 +402,46 @@ export default function ChatWorkspace({ channel, isDM = false }) {
             <span className="font-bold">{typingUser}</span> is typing...
           </div>
         )}
+      </div>
+      </div>
+      
+      {/* Right Sidebar - Members Panel */}
+      {!isDM && showMembers && (
+        <div className="w-60 bg-[#2B2D31] flex flex-col shrink-0 border-l border-[#1E1F22] z-10 custom-scrollbar overflow-y-auto p-4">
+          <h3 className="text-xs font-bold text-gray-400 uppercase mb-4 tracking-wider">
+            Members — {activeServerMembers.length}
+          </h3>
+          <div className="space-y-1">
+            {activeServerMembers.map(member => (
+              <div key={member._id || member.id} className="flex items-center justify-between p-2 hover:bg-[#35373C] rounded group cursor-pointer transition-colors">
+                <div className="flex items-center flex-1 min-w-0">
+                  <div className="relative shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold overflow-hidden shadow-sm mr-3">
+                      {member.avatar ? <img src={member.avatar} className="w-full h-full object-cover" /> : member.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div className={`absolute bottom-0 right-3 w-2.5 h-2.5 rounded-full border-2 border-[#2B2D31] shadow-[0_0_5px_rgba(0,0,0,0.5)] ${member.status === 'online' ? 'bg-green-500' : 'bg-gray-500'}`} />
+                  </div>
+                  <div className="flex flex-col truncate">
+                    <span className="text-sm font-semibold text-gray-300 group-hover:text-white truncate">{member.username}</span>
+                    {activeServer?.owner === (member._id || member.id) && (
+                      <span className="text-[9px] uppercase font-bold text-yellow-500">Owner</span>
+                    )}
+                  </div>
+                </div>
+                {isOwner && activeServer?.owner !== (member._id || member.id) && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleKickMember(member._id || member.id); }}
+                    className="p-1.5 text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                    title="Kick Member"
+                  >
+                    <UserMinus size={16} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

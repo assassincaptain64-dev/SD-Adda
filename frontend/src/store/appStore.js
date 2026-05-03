@@ -17,6 +17,7 @@ export const useAppStore = create((set, get) => ({
   servers: [],
   activeServerId: null,
   activeChannelId: null,
+  activeServerMembers: [],
   channels: [],
   messages: [],
   isHome: true, // Default to Home/DMs view
@@ -34,6 +35,7 @@ export const useAppStore = create((set, get) => ({
       socket: null,
       servers: [],
       activeServerId: null,
+      activeServerMembers: [],
       activeChannelId: null,
       channels: [],
       messages: [],
@@ -122,6 +124,14 @@ export const useAppStore = create((set, get) => ({
           )
         }))
       }));
+      // Update activeServerMembers
+      set(state => ({
+        activeServerMembers: state.activeServerMembers.map(m =>
+          (m._id || m.id) === userId
+            ? { ...m, avatar: avatar || m.avatar, username: username || m.username }
+            : m
+        )
+      }));
       // Note: setFriends is in Home.jsx, we might need to handle it there too or move it here
     });
 
@@ -147,6 +157,45 @@ export const useAppStore = create((set, get) => ({
       set(state => ({
         voiceUsers: { ...state.voiceUsers, [channelId]: users }
       }));
+    });
+
+    socket.on('force_leave_voice', () => {
+      // User was kicked from voice
+      get().leaveVoice();
+      alert('You have been disconnected from the voice channel by a moderator.');
+    });
+
+    socket.on('kicked_from_server', ({ serverId, userId }) => {
+      const { user } = useAuthStore.getState();
+      if (user.id === userId) {
+        // I was kicked
+        set(state => ({
+          servers: state.servers.filter(s => s._id !== serverId)
+        }));
+        
+        if (get().activeServerId === serverId) {
+          get().setIsHome(true);
+          alert('You have been removed from the server.');
+        }
+      } else {
+        // Someone else was kicked
+        if (get().activeServerId === serverId) {
+          set(state => ({
+            activeServerMembers: state.activeServerMembers.filter(m => (m._id || m.id) !== userId)
+          }));
+        }
+      }
+    });
+
+    socket.on('member_joined_server', ({ serverId, member }) => {
+      if (get().activeServerId === serverId) {
+        set(state => {
+          // Prevent duplicates
+          const exists = state.activeServerMembers.some(m => (m._id || m.id) === (member._id || member.id));
+          if (exists) return state;
+          return { activeServerMembers: [...state.activeServerMembers, member] };
+        });
+      }
     });
 
     // Request initial voice state
@@ -231,6 +280,7 @@ export const useAppStore = create((set, get) => ({
       set({ 
         channels: res.data.channels, 
         activeServerId: serverId,
+        activeServerMembers: res.data.members || [],
         unreadChannels: { ...get().unreadChannels, ...unreadMap }
       });
       if (res.data.channels.length > 0) {

@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
-import { Hash, Volume2, Plus } from 'lucide-react';
+import { Hash, Volume2, Plus, UserMinus } from 'lucide-react';
 import axios from 'axios';
 import { API_URL } from '../api';
 import UserPanel from './UserPanel';
 
 export default function ChannelList() {
-  const { servers, activeServerId, channels, activeChannelId, setActiveChannel, fetchServerDetails, unreadChannels, voiceUsers, joinVoice } = useAppStore();
+  const { servers, activeServerId, channels, activeChannelId, setActiveChannel, fetchServerDetails, unreadChannels, voiceUsers, joinVoice, socket } = useAppStore();
   const { user } = useAuthStore();
   const [showAddChannel, setShowAddChannel] = useState(false);
   const [channelName, setChannelName] = useState('');
@@ -41,7 +41,7 @@ export default function ChannelList() {
   };
 
   return (
-    <div className="w-60 bg-[#2B2D31] flex flex-col h-full shrink-0">
+    <div className="w-60 bg-[#1E1F22]/80 backdrop-blur-xl border-r border-white/5 flex flex-col h-full shrink-0 relative z-10">
       <div className="h-16 flex flex-col justify-center px-4 border-b border-[#1E1F22] shadow-sm">
         <h2 className="font-bold text-white truncate">{activeServer?.name || 'Server'}</h2>
         {activeServer?.inviteCode && (
@@ -70,8 +70,8 @@ export default function ChannelList() {
               <div 
                 key={channel._id}
                 onClick={() => setActiveChannel(channel._id, 'TEXT')}
-                className={`flex items-center px-2 py-1.5 rounded cursor-pointer group relative
-                  ${activeChannelId === channel._id ? 'bg-[#404249] text-white' : 'text-gray-400 hover:bg-[#35373C] hover:text-gray-300'}
+                className={`flex items-center px-2 py-2 rounded-md cursor-pointer group relative transition-all duration-300
+                  ${activeChannelId === channel._id ? 'bg-gradient-to-r from-sagar-blue/20 to-transparent text-white border-l-2 border-sagar-blue' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border-l-2 border-transparent'}
                 `}
               >
                 {unreadChannels[channel._id] > 0 && activeChannelId !== channel._id && (
@@ -104,8 +104,8 @@ export default function ChannelList() {
               <div key={channel._id}>
                 <div 
                   onClick={() => handleVoiceClick(channel._id)}
-                  className={`flex items-center px-2 py-1.5 rounded cursor-pointer group
-                    ${activeChannelId === channel._id ? 'bg-[#404249] text-white' : 'text-gray-400 hover:bg-[#35373C] hover:text-gray-300'}
+                  className={`flex items-center px-2 py-2 rounded-md cursor-pointer group transition-all duration-300 relative
+                    ${activeChannelId === channel._id ? 'bg-gradient-to-r from-green-500/20 to-transparent text-white border-l-2 border-green-500' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border-l-2 border-transparent'}
                   `}
                 >
                   <Volume2 size={18} className="mr-1.5 text-gray-400 group-hover:text-gray-300" />
@@ -114,11 +114,27 @@ export default function ChannelList() {
                 {/* Voice Users List */}
                 <div className="ml-8 mt-1 space-y-1 mb-2">
                   {voiceUsers[channel._id]?.map(vUser => (
-                    <div key={vUser.id} className="flex items-center gap-2 text-xs text-gray-300 py-1">
-                      <div className="w-5 h-5 rounded-full overflow-hidden bg-indigo-500">
-                        {vUser.avatar ? <img src={vUser.avatar} className="w-full h-full object-cover" /> : vUser.username.charAt(0)}
+                    <div key={vUser.id} className="flex items-center justify-between text-xs text-gray-300 py-1.5 px-2 rounded hover:bg-white/5 transition-colors group/user">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="w-6 h-6 shrink-0 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-md border border-white/10 group-hover/user:border-white/30 transition-colors">
+                          {vUser.avatar ? <img src={vUser.avatar} className="w-full h-full object-cover" /> : vUser.username.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="truncate group-hover/user:text-white transition-colors drop-shadow-md">{vUser.username}</span>
                       </div>
-                      <span className="truncate">{vUser.username}</span>
+                      {activeServer?.owner === user.id && vUser.id !== user.id && (
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            if(window.confirm('Kick from voice?')) {
+                              socket.emit('kick_from_voice', { channelId: channel._id, targetUserId: vUser.id });
+                            }
+                          }}
+                          className="p-1 text-gray-500 hover:text-red-500 opacity-0 group-hover/user:opacity-100 transition-opacity shrink-0"
+                          title="Kick from Voice"
+                        >
+                          <UserMinus size={14} />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

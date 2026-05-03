@@ -206,6 +206,24 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('kick_from_voice', async (data) => {
+    // data = { channelId, targetUserId }
+    // We emit to the target user
+    const targetSocketId = onlineUsers.get(data.targetUserId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('force_leave_voice');
+    }
+    
+    // Also explicitly remove from internal tracking to ensure sync
+    if (voiceChannels.has(data.channelId)) {
+      voiceChannels.get(data.channelId).delete(data.targetUserId);
+      io.emit('voice_users_update', { 
+        channelId: data.channelId, 
+        users: Array.from(voiceChannels.get(data.channelId).values()) 
+      });
+    }
+  });
+
   socket.on('disconnect', async () => {
     let disconnectedUserId = null;
     for (let [userId, socketId] of onlineUsers.entries()) {

@@ -59,6 +59,10 @@ exports.joinServer = async (req, res) => {
 
     await User.findByIdAndUpdate(req.user.id, { $push: { servers: server._id } });
 
+    const user = await User.findById(req.user.id).select('username avatar status uid');
+    const io = req.app.get('io');
+    io.emit('member_joined_server', { serverId: server._id, member: user });
+
     res.json(server);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -122,6 +126,40 @@ exports.getServerById = async (req, res) => {
     }));
 
     res.json({ ...server.toObject(), channels: channelsWithUnread });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+exports.kickFromServer = async (req, res) => {
+  try {
+    const { serverId, userId } = req.params;
+    
+    const server = await Server.findById(serverId);
+    if (!server) return res.status(404).json({ message: 'Server not found' });
+    
+    // Check if requester is owner
+    if (server.owner.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the server owner can kick members' });
+    }
+    
+    // Check if target is owner
+    if (userId === server.owner.toString()) {
+      return res.status(400).json({ message: 'Cannot kick the server owner' });
+    }
+    
+    // Remove from server
+    server.members = server.members.filter(m => m.toString() !== userId);
+    await server.save();
+    
+    // Remove from user
+    await User.findByIdAndUpdate(userId, { $pull: { servers: serverId } });
+    
+    // Emit socket event
+    const io = req.app.get('io');
+    io.emit('kicked_from_server', { serverId, userId });
+    
+    res.json({ message: 'User kicked successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
