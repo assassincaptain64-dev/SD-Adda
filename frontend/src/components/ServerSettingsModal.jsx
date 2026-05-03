@@ -3,7 +3,7 @@ import { useAppStore } from '../store/appStore';
 import AvatarEditor from 'react-avatar-editor';
 import { X, Upload, Trash2, Save } from 'lucide-react';
 import axios from 'axios';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_URL } from '../api';
 
 export default function ServerSettingsModal({ server, onClose }) {
   const { fetchServers, showToast } = useAppStore();
