@@ -23,7 +23,11 @@ export default function VoiceManager() {
   useEffect(() => {
     if (!currentVoiceChannelId || !user) {
       if (zpRef.current) {
-        zpRef.current.destroy();
+        try {
+          zpRef.current.destroy();
+        } catch (e) {
+          console.error("Error destroying Zego instance:", e);
+        }
         zpRef.current = null;
       }
       return;
@@ -76,13 +80,17 @@ export default function VoiceManager() {
 
     return () => {
       if (zpRef.current) {
-        zpRef.current.destroy();
+        try {
+          zpRef.current.destroy();
+        } catch (e) {
+          console.error("Error during unmount cleanup:", e);
+        }
         zpRef.current = null;
       }
     };
   }, [currentVoiceChannelId, user?.id]);
 
-  if (!currentVoiceChannelId) return null;
+  if (!currentVoiceChannelId || !user) return null;
 
   return (
     <div className={`

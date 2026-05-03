@@ -6,6 +6,8 @@ const API_URL = import.meta.env.PROD
   ? '/api' 
   : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
+import { useAppStore } from './appStore';
+
 export const useAuthStore = create((set) => ({
   user: null,
   isAuthenticated: false,
@@ -42,6 +44,9 @@ export const useAuthStore = create((set) => ({
 
   logout: async () => {
     try {
+      // Clear app state first
+      useAppStore.getState().resetStore();
+      
       await axios.post(`${API_URL}/auth/logout`);
       set({ user: null, isAuthenticated: false });
     } catch (error) {

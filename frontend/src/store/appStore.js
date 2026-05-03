@@ -27,6 +27,26 @@ export const useAppStore = create((set, get) => ({
   voiceUsers: {}, // channelId -> [users]
   currentVoiceChannelId: null, // Track global voice session
   
+  resetStore: () => {
+    const socket = get().socket;
+    if (socket) socket.disconnect();
+    set({
+      socket: null,
+      servers: [],
+      activeServerId: null,
+      activeChannelId: null,
+      channels: [],
+      messages: [],
+      isHome: true,
+      activeConversationId: null,
+      conversations: [],
+      unreadChannels: {},
+      unreadConversations: {},
+      voiceUsers: {},
+      currentVoiceChannelId: null
+    });
+  },
+  
   setIsHome: (val) => set({ isHome: val, activeServerId: val ? null : get().activeServerId, activeConversationId: null }),
   setConversations: (conversations) => {
     const unreadMap = {};
